@@ -1,0 +1,71 @@
+{
+    "name": "neo-vscode",
+    "displayName": "neo-vscode",
+    "description": "A vscode extension to write, compile and deploy neo smart contract",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.33.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [
+        "*"
+    ],
+    "main": "./out/extension.js",
+    "contributes": {
+        "grammars": [
+            {
+                "injectTo": [
+                    "source.cs"
+                ],
+                "scopeName": "source.cs.neo",
+                "path": "./syntaxes/neo.tmLanguage.json"
+            }
+        ],
+        "commands": [
+            {
+                "command": "neo.compileContract",
+                "title": "NEO: Compile Smart Contract"
+            },
+            {
+                "command": "neo.deployContract",
+                "title": "NEO: Deploy Smart Contract"
+            }
+        ],
+        "menus": {
+            "explorer/context": [
+                {
+                    "when": "resourceExtname == .cs",
+                    "command": "neo.compileContract",
+                    "group": "myGroup"
+                },
+                {
+                    "when": "resourceExtname == .avm",
+                    "command": "neo.deployContract",
+                    "group": "myGroup"
+                }
+            ]
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "postinstall": "node ./node_modules/vscode/bin/install",
+        "test": "npm run compile && node ./node_modules/vscode/bin/test"
+    },
+    "devDependencies": {
+        "typescript": "^3.3.1",
+        "vscode": "^1.1.28",
+        "tslint": "^5.12.1",
+        "@types/node": "^10.12.21",
+        "@types/mocha": "^2.2.42"
+    },
+    "dependencies": {
+        "@types/request": "^2.48.1",
+        "@types/request-promise-native": "^1.0.15",
+        "request": "^2.88.0",
+        "request-promise-native": "^1.0.7"
+    }
+}

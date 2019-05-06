@@ -1,0 +1,24 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"injectionSelector": "L:source",
+  	"patterns": [
+  	  {
+  	    "include": "#float-invalid"
+  	  }
+  	],
+  	"repository": {
+  	  "float-invalid": {
+				"patterns": [
+					{
+						"match": "\\b(float|double)\\b",
+						"captures": {
+							"1": {
+								"name": "invalid.deprecated.neo.cs"
+							}
+						}
+					}
+				]
+  	  }
+  	},
+	"scopeName": "source.cs.neo"
+}

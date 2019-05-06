@@ -1,0 +1,263 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Contract Deployment</title>
+        <style type="text/css">
+            .container {
+                max-width: 400px;
+                background: rgba(30, 30, 30);
+                color: white;
+                padding: 10px;
+            }
+            .header {
+                border-bottom: solid 2px grey;
+                display: flex;
+                padding: 20px 0;
+            }
+            .info-container {
+                position:relative;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-around;
+                height: 200px;
+                padding-top: 20px;
+            }
+            .info-group {
+                display: flex;
+            }
+            .info-label {
+                width: 130px;
+            }
+            .info-value {
+                outline: none;
+                border: none;
+            }
+            .options {
+                display: flex;
+                justify-content: space-between;
+                width: 300px;
+            }
+            .options input {
+                cursor: pointer;
+            }
+            .footer {
+                height: 50px;
+                line-height: 50px;
+                border-top: solid 2px grey;
+                margin-top: 20px;
+                padding-right: 30px;
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .footer button {
+                background: cornflowerblue;
+                border: none;
+            }
+
+            .required {
+                color: red;
+            }
+
+            .modal {
+                display: none;
+                position: absolute;
+                left: 0;
+                right: 0;
+                top: 0;
+                bottom: 0;
+                background: rgb(0, 0, 0, .5);
+                z-index: 10;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .modal-content {
+                padding: 20px 30px;
+                width: 30%;
+                height: 20%;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-around;
+                text-align: center;
+                background: rgba(30, 30, 30);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <div class="info-label">Contract ScriptHash</div>
+                <textarea id="contract-scripthash" disabled style="height: 25px; width: 200px"></textarea>
+            </div>
+            <div class="header">
+                <div class="info-label">Contract AVM</div>
+                <textarea id="contract-avm" disabled style="height: 100px; width: 280px"></textarea>
+            </div>
+            <div>
+                <div class="info-container">
+                    <div class="info-group">
+                        <div class="info-label"><span class="required">*</span>Contract Name</div>
+                        <input onchange="onContractNameChange()" required="true" type="text" class="info-value" id="contractName"/>
+                    </div>
+                    <label style="position: absolute;color:red;top: 0;display: none" id="validation_info">
+                        At least you should fill in contract name.
+                    </label>
+                    <div class="info-group">
+                        <div class="info-label">Version</div>
+                        <input class="info-value" id="version" type="text"/>
+                    </div>
+                    <div class="info-group">
+                        <div class="info-label">Author</div>
+                        <input class="info-value" id="author" type="text"/>
+                    </div>
+                    <div class="info-group">
+                        <div class="info-label">Email</div>
+                        <input class="info-value" id="email" type="email"/>
+                    </div>
+                    <div class="info-group">
+                        <div class="info-label">Description</div>
+                        <input class="info-value" id="description" type="text"/>
+                    </div>
+                </div>
+                <div class="options">
+                    <div>
+                        <input id="dynamicCall" type="checkbox" onclick="onCheckboxChange()"/>
+                        <div>Dynamic call</div>
+                    </div>
+                    <div>
+                        <input id="needStorage" type="checkbox" onclick="onCheckboxChange()"/>
+                        <div>Need storage</div>
+                    </div>
+                    <div>
+                        <input id="acceptPayment" type="checkbox" onclick="onCheckboxChange()"/>
+                        <div>Accept payment</div>
+                    </div>
+                </div>
+            </div>
+            <div class="footer">
+                <div>GAS comsumption: <span id="gas_fee">90</span>(+11Network fee)</div>
+                <button id="button_deploy" disabled onclick="onDeploySubmit()">Deploy</button>
+            </div>
+            <!-- <div class="modal" id="wallet-password">
+                <div class="modal-content">
+                    <label>Please input your wallet password</label>
+                    <input type="password" id="wallet_password"/>
+                    <button id="submitPassword">Submit</button>
+                </div>
+            </div> -->
+            <div class="modal" id="message_from_extension">
+                <div class="modal-content">
+                    <label></label>
+                </div>
+            </div>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/o3-dapi-core/lib/o3-dapi-core.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/o3-dapi-neo/lib/o3-dapi-neo.min.js"></script>
+        <script type="text/javascript">
+            const vscode = acquireVsCodeApi();
+            if (!window.o3dapi) {
+                console.error('O3 initialized error.');
+                showMessage('O3 initialized error.');
+            }
+            o3dapi.initPlugins([o3dapiNeo]);
+            o3dapi.NEO.addEventListener(o3dapi.NEO.Constants.EventName.READY, data => {
+              o3dapi.NEO.getProvider()
+              .then(res => {
+                  document.getElementById('button_deploy').disabled = false;
+               })
+              .catch(err => showMessage(err));
+            });
+
+            const dynamicCallCheckbox = document.getElementById('dynamicCall');
+            const needStorageCheckbox = document.getElementById('needStorage');
+            const acceptPaymentCheckbox = document.getElementById('acceptPayment');
+            const gasFeeEle = document.getElementById('gas_fee');
+            function onCheckboxChange() {
+                const gasFee = 90 + (dynamicCallCheckbox.checked ? 500 : 0)  + (needStorageCheckbox.checked ? 400 : 0);
+                gasFeeEle.innerText = gasFee;
+            }
+
+            function onContractNameChange() {
+                const contractName = document.getElementById('contractName').value;
+                const validationInfoEle = document.getElementById('validation_info');
+                if (!contractName || contractName == "") {
+                    validationInfoEle.style.display = "block";
+                } else {
+                    validationInfoEle.style.display = "none";
+                }
+            }
+
+            function onDeploySubmit() {
+                const contractName = document.getElementById('contractName').value;
+                if (!contractName || contractName == "") {
+                    const validationInfoEle = document.getElementById('validation_info');
+                    validationInfoEle.style.display = "block";
+                    return ;
+                }
+                deployContractWithO3();
+            }
+
+            function deployContractWithO3() {
+                const avm = document.getElementById('contract-avm').value;
+                const contractName = document.getElementById('contractName').value;
+                const version = document.getElementById('version').value;
+                const author = document.getElementById('author').value;
+                const email = document.getElementById('email').value;
+                const description = document.getElementById('description').value;
+                const dynamicCall = dynamicCallCheckbox.checked;
+                const needStorage = needStorageCheckbox.checked;
+                const acceptPayment = acceptPaymentCheckbox.checked;
+                const gasFee = gasFeeEle.innerText;
+
+                o3dapi.NEO.deploy({
+                  network: 'TestNet',
+                  name: contractName,
+                  version,
+                  author,
+                  email,
+                  description,
+                  needsStorage: needStorage,
+                  dynamicInvoke: dynamicCall,
+                  isPayable: acceptPayment,
+                  parameterList: '0710',
+                  returnType: '05',
+                  code: avm,
+                  networkFee: '0.001',
+                })
+                .then(({txid, nodeUrl}) => {
+                  console.log('Deploy transaction success!');
+                  showMessage('Deploy transaction success! Transaction ID: ' + txid);
+                  console.log('Transaction ID: ' + txid);
+                  console.log('RPC node URL: ' + nodeUrl);
+                })
+                .catch((e) => {
+                  showMessage(e.description);
+                });
+            }
+
+            function showMessage(errorMessage) {
+                const infoModal = document.getElementById('message_from_extension');
+                infoModal.getElementsByTagName('label')[0].innerText = errorMessage;
+                infoModal.style.display = "flex";
+                setTimeout(function() {
+                    infoModal.style.display = "none";
+                }, 3000);
+            }
+
+            window.addEventListener('message', event => {
+                const message = event.data;
+                if (message.type == "error") {
+                    showMessage(message.text);
+                } else if (message.type == "info") {
+                    const scriptHashEle = document.getElementById('contract-scripthash');
+                    const avmEle = document.getElementById('contract-avm');
+                    scriptHashEle.value = message.scriptHash;
+                    avmEle.value = message.avm;
+                }
+            });
+        </script>
+    </body>
+</html>
